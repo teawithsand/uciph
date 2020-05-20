@@ -5,7 +5,17 @@ type EncKeyOptions = interface{}
 
 // ParsedEncKey is key, which is able to create multiple Encryptors.
 type ParsedEncKey interface {
-	NewEncryptor(options EncKeyOptions) Encryptor
+	NewEncryptor(options EncKeyOptions) (Encryptor, error)
+}
+
+type EncKeyParser interface {
+	ParseEncKey(data []byte) (ParsedEncKey, error)
+}
+
+type EncKeyParserFunc func(data []byte) (ParsedEncKey, error)
+
+func (f EncKeyParserFunc) ParseEncKey(data []byte) (ParsedEncKey, error) {
+	return f(data)
 }
 
 // Encryptor is something capable of encrypting data.
@@ -16,7 +26,8 @@ type Encryptor interface {
 }
 
 type EncryptorFunc func(in, appendTo []byte) (res []byte, err error)
-func(f EncryptorFunc) Encrypt(in, appendTo []byte) (res []byte, err error){
+
+func (f EncryptorFunc) Encrypt(in, appendTo []byte) (res []byte, err error) {
 	return f(in, appendTo)
 }
 
@@ -29,11 +40,49 @@ type Decryptor interface {
 }
 
 type DecryptorFunc func(in, appendTo []byte) (res []byte, err error)
-func(f DecryptorFunc) Decrypt(in, appendTo []byte) (res []byte, err error){
+
+func (f DecryptorFunc) Decrypt(in, appendTo []byte) (res []byte, err error) {
 	return f(in, appendTo)
 }
 
 // ParsedDecKey is key, which is able to create multiple Decryptors.
 type ParsedDecKey interface {
-	NewDecryptor(options DecKeyOptions) Decryptor
+	NewDecryptor(options DecKeyOptions) (Decryptor, error)
+}
+
+type DecKeyParser interface {
+	ParseDecKey(data []byte) (ParsedDecKey, error)
+}
+
+type DecKeyParserFunc func(data []byte) (ParsedDecKey, error)
+
+func (f DecKeyParserFunc) ParseDecKey(data []byte) (ParsedDecKey, error) {
+	return f(data)
+}
+
+// SymmKeyParser is parser, which parses symmetric key.
+// Symmetric key is used for both encryption and decryption, thus same code can be used to handle parsing.
+type SymmKeyParser interface {
+	EncKeyParser
+	DecKeyParser
+}
+
+type KeygenOptions = interface{}
+
+type SymmEncKeygen interface {
+	GenSymmKey(options KeygenOptions) (data []byte, err error)
+}
+type SymmEncKeygenFunc func(options KeygenOptions) (data []byte, err error)
+
+func (f SymmEncKeygenFunc) GenSymmKey(options KeygenOptions) (data []byte, err error) {
+	return f(options)
+}
+
+type AsymEncKeygen interface {
+	GenAsymKey(options KeygenOptions) (encryption, decryption []byte, err error)
+}
+type AsymEncKeygenFunc func(options KeygenOptions) (encryption, decryption []byte, err error)
+
+func (f AsymEncKeygenFunc) GenAsymKey(options KeygenOptions) (encryption, decryption []byte, err error) {
+	return f(options)
 }
