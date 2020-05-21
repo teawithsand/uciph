@@ -18,18 +18,18 @@ var ChaCha20Poly1305Keygen SymmEncKeygen = SymmEncKeygenFunc(func(options Keygen
 	return key[:], nil
 })
 
-var ChaCha20Poly1305KeyParser SymmKeyParser = &chacha20KeyParser{}
+var ChaCha20Poly1305KeyParser SymmKeyParser = chacha20KeyParser{}
 
 type chacha20KeyParser struct{}
 
-func (*chacha20KeyParser) ParseEncKey(data []byte) (ParsedEncKey, error) {
+func (chacha20KeyParser) ParseEncKey(data []byte) (ParsedEncKey, error) {
 	if len(data) != chacha20poly1305.KeySize {
 		return nil, ErrKeyInvalid
 	}
 	return chacha20Key(data), nil
 }
 
-func (*chacha20KeyParser) ParseDecKey(data []byte) (ParsedDecKey, error) {
+func (chacha20KeyParser) ParseDecKey(data []byte) (ParsedDecKey, error) {
 	if len(data) != chacha20poly1305.KeySize {
 		return nil, ErrKeyInvalid
 	}

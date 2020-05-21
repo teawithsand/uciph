@@ -52,17 +52,31 @@ func DoTestEncryptorDecryptor(
 		[]byte{0x02},
 	}))
 
-	td := make([][]byte, 0)
-	for i := 0; i < 10; i++ {
-		b := make([]byte, 4096)
-		_, err := io.ReadFull(rng, b[:])
-		if err != nil {
-			t.Error(err)
+	{
+		td := make([][]byte, 0)
+		for i := 0; i < 10; i++ {
+			b := make([]byte, 4096)
+			_, err := io.ReadFull(rng, b[:])
+			if err != nil {
+				t.Error(err)
+			}
+			td = append(td, b)
 		}
-		td = append(td, b)
+		rep(assert(td))
 	}
 
-	rep(assert(td))
+	{
+		td := make([][]byte, 0)
+		for i := 0; i < 10; i++ {
+			b := make([]byte, 5*i*i*i+3*i*i+20*i+3)
+			_, err := io.ReadFull(rng, b[:])
+			if err != nil {
+				t.Error(err)
+			}
+			td = append(td, b)
+		}
+		rep(assert(td))
+	}
 }
 
 func TestChaCha20EncryptAndDecrypt(t *testing.T) {
