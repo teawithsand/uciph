@@ -1,11 +1,18 @@
 package uciph
 
 // NonceCounter is preallocated slice of specified size, which can be efficiently incremented by one
-// in order to produce unique nonces for data encryption
+// in order to produce unique nonces for data encryption.
+//
+// NOTE: NocneCounter IS NOT CONSTANT TIME!!!
+// Be aware that this counter leaks(or may leak) count of chunks encrypted already.
+// Usually this is not problem, since attacker knows anyway how many chunks were encrypted.
 type NonceCounter []uint8
 
 // simd it?
 // is it fast enough anyway?
+
+// Increment assigns next unique value to this nonce counter.
+// If it's not possible without overflowing or changing nonce size then error is returned.
 func (nonce NonceCounter) Increment() (err error) {
 	for i := 0; i < len(nonce); i++ {
 		if nonce[i] == 255 && i == len(nonce)-1 {

@@ -14,6 +14,12 @@ type ParsedEncKey interface {
 	NewEncryptor(options EncKeyOptions) (Encryptor, error)
 }
 
+type ParsedEncKeyFunc func(options EncKeyOptions) (Encryptor, error)
+
+func (f ParsedEncKeyFunc) NewEncryptor(options EncKeyOptions) (Encryptor, error) {
+	return f(options)
+}
+
 type EncKeyParser interface {
 	ParseEncKey(data []byte) (ParsedEncKey, error)
 }
@@ -54,6 +60,12 @@ func (f DecryptorFunc) Decrypt(in, appendTo []byte) (res []byte, err error) {
 // ParsedDecKey is key, which is able to create multiple Decryptors.
 type ParsedDecKey interface {
 	NewDecryptor(options DecKeyOptions) (Decryptor, error)
+}
+
+type ParsedDecKeyFunc func(options DecKeyOptions) (Decryptor, error)
+
+func (f ParsedDecKeyFunc) NewDecryptor(options DecKeyOptions) (Decryptor, error) {
+	return f(options)
 }
 
 type DecKeyParser interface {

@@ -105,7 +105,5 @@ func TestChaCha20EncryptAndDecrypt(t *testing.T) {
 		}
 		return enc, dec
 	}
-	for i := 0; i < 10; i++ {
-		DoTestEncryptorDecryptor(fac, t)
-	}
+	DoTestEncryptorDecryptor(fac, t)
 }
