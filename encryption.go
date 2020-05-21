@@ -1,5 +1,11 @@
 package uciph
 
+// ParsedSymmKey is key which is both ParsedEncKey and ParsedDecKey
+type ParsedSymmKey interface {
+	ParsedEncKey
+	ParsedDecKey
+}
+
 // EncKeyOptions contains options, which may be used to create encryptor.
 type EncKeyOptions = interface{}
 
@@ -65,6 +71,8 @@ func (f DecKeyParserFunc) ParseDecKey(data []byte) (ParsedDecKey, error) {
 type SymmKeyParser interface {
 	EncKeyParser
 	DecKeyParser
+
+	ParseSymmKey(data []byte) (ParsedSymmKey, error)
 }
 
 type KeygenOptions = interface{}

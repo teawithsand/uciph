@@ -22,18 +22,19 @@ var ChaCha20Poly1305KeyParser SymmKeyParser = chacha20KeyParser{}
 
 type chacha20KeyParser struct{}
 
-func (chacha20KeyParser) ParseEncKey(data []byte) (ParsedEncKey, error) {
+func (chacha20KeyParser) ParseSymmKey(data []byte) (ParsedSymmKey, error) {
 	if len(data) != chacha20poly1305.KeySize {
 		return nil, ErrKeyInvalid
 	}
 	return chacha20Key(data), nil
 }
 
-func (chacha20KeyParser) ParseDecKey(data []byte) (ParsedDecKey, error) {
-	if len(data) != chacha20poly1305.KeySize {
-		return nil, ErrKeyInvalid
-	}
-	return chacha20Key(data), nil
+func (p chacha20KeyParser) ParseEncKey(data []byte) (ParsedEncKey, error) {
+	return p.ParseSymmKey(data)
+}
+
+func (p chacha20KeyParser) ParseDecKey(data []byte) (ParsedDecKey, error) {
+	return p.ParseSymmKey(data)
 }
 
 type chacha20Key []byte
