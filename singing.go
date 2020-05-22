@@ -7,7 +7,7 @@ type SigKeyOptions = interface{}
 
 // ParsedSigKey is key, which is able to create multiple Signers.
 type ParsedSigKey interface {
-	NewEncryptor(options SigKeyOptions) Signer
+	NewEncryptor(options SigKeyOptions) (Signer, error)
 }
 
 // Signer is something capable of signing data.
@@ -32,13 +32,36 @@ type Verifier interface {
 // ParsedVerKey is key, which is able to create multiple Verifiers.
 // Each verifier is able to verify sign for single data.
 type ParsedVerKey interface {
-	NewVerifier(options VerKeyOptions) Verifier
+	NewVerifier(options VerKeyOptions) (Verifier, error)
 }
 
+// HasherOptions contains options, which are passed to hasher.
 type HasherOptions = SigKeyOptions
 
+// HMACKeyParser is something capable of creating HMAC key.
+type HMACKeyParser interface {
+	ParseHMACKey(data []byte) (ParsedHMACKey, error)
+}
+
+// HMACKeyParserFunc is function, which satisfies HMACKeyParser.
+type HMACKeyParserFunc func(data []byte) (ParsedHMACKey, error)
+
+// ParseHMACKey makes HMACKeyParserFunc satisfy HMACKeyParser
+func (f HMACKeyParserFunc) ParseHMACKey(data []byte) (ParsedHMACKey, error) {
+	return f(data)
+}
+
+// ParsedHMACKey is HMAC key, which is able to create new hashers.
 type ParsedHMACKey interface {
-	NewHasher(options HasherOptions) Hasher
+	NewHasher(options HasherOptions) (Hasher, error)
+}
+
+// ParsedHMACKeyFunc is function, which staisfies ParsedHMACKey.
+type ParsedHMACKeyFunc func(options HasherOptions) (Hasher, error)
+
+// NewHasher makes ParsedHMACKeyFunc satisfy ParsedHMACKey.
+func (f ParsedHMACKeyFunc) NewHasher(options HasherOptions) (Hasher, error) {
+	return f(options)
 }
 
 // Hasher is something capable of computing hashes.
@@ -49,12 +72,15 @@ type Hasher interface {
 	Sum(appendTo []byte) (res []byte, err error)
 }
 
+// HasherFactory is something, which creates hasher
+// but are not HMAC keys.
 type HasherFactory interface {
-	NewHasher(options HasherOptions) Hasher
+	NewHasher(options HasherOptions) (Hasher, error)
 }
 
-type HasherFactoryFunc func(options HasherOptions) Hasher
+// HasherFactoryFunc is something capa
+type HasherFactoryFunc func(options HasherOptions) (Hasher, error)
 
-func (f HasherFactoryFunc) NewHasher(options HasherOptions) Hasher {
+func (f HasherFactoryFunc) NewHasher(options HasherOptions) (Hasher, error) {
 	return f(options)
 }

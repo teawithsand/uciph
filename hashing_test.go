@@ -107,7 +107,10 @@ func TestCryptoSHA256Hasher(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		h := hf.NewHasher(nil)
+		h, err := hf.NewHasher(nil)
+		if err != nil {
+			t.Error(err)
+		}
 		return h
 	})
 }
@@ -118,7 +121,31 @@ func TestCryptoSHA512Hasher(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		h := hf.NewHasher(nil)
+		h, err := hf.NewHasher(nil)
+		if err != nil {
+			t.Error(err)
+		}
+		return h
+	})
+}
+
+func TestCryptoSHA256HMACHasher(t *testing.T) {
+	hkp, err := uciph.NewHMACKeyParser(crypto.SHA256)
+	if err != nil {
+		t.Error(err)
+	}
+	kh, err := hkp.ParseHMACKey([]byte{
+		1, 2, 3, 4,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	DoTestHasher(t, func() uciph.Hasher {
+		h, err := kh.NewHasher(nil)
+		if err != nil {
+			t.Error(err)
+		}
 		return h
 	})
 }
@@ -126,7 +153,31 @@ func TestCryptoSHA512Hasher(t *testing.T) {
 func BenchmarkHashCryptoSHA256(b *testing.B) {
 	bechmarkHash(b, func() uciph.Hasher {
 		hf, _ := uciph.NewCryptoHasherFactory(crypto.SHA256)
-		h := hf.NewHasher(nil)
+		h, err := hf.NewHasher(nil)
+		if err != nil {
+			b.Error(err)
+		}
+		return h
+	})
+}
+
+func BenchmarkHMACCryptoSHA256(b *testing.B) {
+	hkp, err := uciph.NewHMACKeyParser(crypto.SHA256)
+	if err != nil {
+		b.Error(err)
+	}
+	kh, err := hkp.ParseHMACKey([]byte{
+		1, 2, 3, 4,
+	})
+	if err != nil {
+		b.Error(err)
+	}
+
+	bechmarkHash(b, func() uciph.Hasher {
+		h, err := kh.NewHasher(nil)
+		if err != nil {
+			b.Error(err)
+		}
 		return h
 	})
 }
@@ -134,7 +185,10 @@ func BenchmarkHashCryptoSHA256(b *testing.B) {
 func BenchmarkHashCryptoSHA512(b *testing.B) {
 	bechmarkHash(b, func() uciph.Hasher {
 		hf, _ := uciph.NewCryptoHasherFactory(crypto.SHA256)
-		h := hf.NewHasher(nil)
+		h, err := hf.NewHasher(nil)
+		if err != nil {
+			b.Error(err)
+		}
 		return h
 	})
 }
