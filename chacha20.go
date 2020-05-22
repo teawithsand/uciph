@@ -45,7 +45,17 @@ func (k chacha20Key) NewEncryptor(options EncKeyOptions) (Encryptor, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewRNGAEADEncryptor(aead, options), nil
+	nm := GetNonceMode(options)
+	switch nm {
+	case NonceModeCounter:
+		return NewCtrAEADEncryptor(aead, options), nil
+	/*
+		case NonceModeRandom:
+			fallthrough
+	*/
+	default:
+		return NewRNGAEADEncryptor(aead, options), nil
+	}
 }
 
 func (k chacha20Key) NewDecryptor(options DecKeyOptions) (Decryptor, error) {
@@ -54,5 +64,15 @@ func (k chacha20Key) NewDecryptor(options DecKeyOptions) (Decryptor, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewRNGAEADDecryptor(aead, options), nil
+	nm := GetNonceMode(options)
+	switch nm {
+	case NonceModeCounter:
+		return NewCtrAEADDecryptor(aead, options), nil
+	/*
+		case NonceModeRandom:
+			fallthrough
+	*/
+	default:
+		return NewRNGAEADDecryptor(aead, options), nil
+	}
 }

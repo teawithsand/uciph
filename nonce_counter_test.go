@@ -38,3 +38,18 @@ func TestThreeByteNonceCounterFails(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkNonceCounterIncrement(b *testing.B) {
+	for i := 16; i <= 24; i++ {
+		b.Run(fmt.Sprintf("NonceCounter: %d", i), func(b *testing.B) {
+			nc := NonceCounter(make([]byte, i))
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				err := nc.Increment()
+				if err != nil {
+					b.Error(err)
+				}
+			}
+		})
+	}
+}

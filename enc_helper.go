@@ -7,7 +7,13 @@ import (
 
 // NewCtrAEADEncryptor wraps any AEAD and uses it to encrypt chunks.
 // It uses nonce coutner to manage nonces.
-func NewCtrAEADEncryptor(aead cipher.AEAD, nc NonceCounter) Encryptor {
+func NewCtrAEADEncryptor(aead cipher.AEAD, options interface{}) Encryptor {
+	var nc NonceCounter
+
+	// TODO(teawihtsand): allow NonceCounter from options
+	if nc == nil {
+		nc = NonceCounterForAEAD(aead)
+	}
 	if aead.NonceSize() != nc.Len() {
 		panic("uciph: Nonce length mismatch between cipher.AEAD and NonceCounter")
 	}
@@ -22,7 +28,13 @@ func NewCtrAEADEncryptor(aead cipher.AEAD, nc NonceCounter) Encryptor {
 
 // NewCtrAEADDecryptor wraps any AEAD and uses it to decrypt chunks.
 // It uses nonce coutner to manage nonces.
-func NewCtrAEADDecryptor(aead cipher.AEAD, nc NonceCounter) Decryptor {
+func NewCtrAEADDecryptor(aead cipher.AEAD, options interface{}) Decryptor {
+	var nc NonceCounter
+
+	// TODO(teawihtsand): allow NonceCounter from options
+	if nc == nil {
+		nc = NonceCounterForAEAD(aead)
+	}
 	if aead.NonceSize() != nc.Len() {
 		panic("uciph: Nonce length mismatch between cipher.AEAD and NonceCounter")
 	}

@@ -1,5 +1,7 @@
 package uciph
 
+import "crypto/cipher"
+
 // NonceCounter is preallocated slice of specified size, which can be efficiently incremented by one
 // in order to produce unique nonces for data encryption.
 //
@@ -7,6 +9,11 @@ package uciph
 // Be aware that this counter leaks(or may leak) count of chunks encrypted already.
 // Usually this is not problem, since attacker knows anyway how many chunks were encrypted.
 type NonceCounter []uint8
+
+// NonceCounterForAEAD creates nonce counter appropriate for specified AEAD cipher.
+func NonceCounterForAEAD(aead cipher.AEAD) NonceCounter {
+	return make([]byte, aead.NonceSize())
+}
 
 // simd it?
 // is it fast enough anyway?
