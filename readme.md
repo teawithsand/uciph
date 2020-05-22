@@ -24,3 +24,4 @@ What it does implement right now:
 5. Ed25519 Signing
 6. golang stdlib crypto hash functions
 7. HMAC using golang stdlib
+8. ISO/IEC 7816-4 Padding(constant time)
