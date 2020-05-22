@@ -1,0 +1,6 @@
+/*/go-fuzz-build
+/*/corpus
+/*/crashers
+/*/suppressions
+/*/*.zip
+/*/go.sum
