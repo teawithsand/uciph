@@ -57,6 +57,7 @@ type stlHasher struct {
 func (h *stlHasher) Write(d []byte) (sz int, err error) {
 	return h.hash.Write(d)
 }
+
 func (h *stlHasher) Sum(appendTo []byte) (res []byte, err error) {
 	res = h.hash.Sum(appendTo)
 	return

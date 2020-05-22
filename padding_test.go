@@ -3,6 +3,7 @@ package uciph_test
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"testing"
 
 	"github.com/teawithsand/uciph"
@@ -48,4 +49,40 @@ func TestCanUnpadMessages(t *testing.T) {
 	assert([]byte{}, -1)
 	assert([]byte{0xaa}, -1)
 	assert([]byte{0xaa, 0xaa, 0xbb}, -1)
+}
+
+var useUnpadStuff int
+
+func BenchmarkUnpadMessage(b *testing.B) {
+	doBench := func(sz int, upsz int) {
+		buf := make([]byte, sz)
+		_, err := io.ReadFull(uciph.GetRNG(nil), buf)
+		if err != nil {
+			b.Error(err)
+		}
+		for i := len(buf) - upsz; i < len(buf); i++ {
+			buf[i] = 0
+		}
+		buf[len(buf)-upsz] = 0x80
+
+		b.Run(fmt.Sprintf(
+			"unpad random %d bytes to %d",
+			len(buf),
+			uciph.IEC78164Padding.Unpad(buf),
+		), func(b *testing.B) {
+			b.SetBytes(int64(len(buf)))
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				useUnpadStuff = uciph.IEC78164Padding.Unpad(buf)
+			}
+		})
+	}
+
+	doBench(2048, 1024)
+
+	// TODO(teaiwthsand): debug why these are not constant time
+	// these should be same
+	doBench(1024*10, 1024)
+	doBench(1024*10, 1024*3)
+	doBench(1024*10, 1024*2)
 }

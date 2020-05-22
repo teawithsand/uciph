@@ -25,6 +25,9 @@ func (f UnpadderFunc) Unpad(data []byte) (msgSize int) {
 	return f(data)
 }
 
+// Padding is something, which gets messsage
+// and makes it constant length.
+// It's also able to reverse it.
 type Padding interface {
 	Padder
 	Unpadder
@@ -35,6 +38,11 @@ type compositePadding struct {
 	Unpadder
 }
 
+// TOOD(teawihtsand): debug why this is not constant time
+// at least looks like so, when benchmark are in use
+
+// IEC78164Padding is single padding scheme, which has simple format:
+// [any, any, any..., 0x80, 0x00, 0x00, 0x00...].
 var IEC78164Padding Padding = &compositePadding{
 	// Padder padds fills buf[msgSize:] with padding.
 	// There always must be at least one free for padding byte in buf. Otherwise behaviour is undefined.
