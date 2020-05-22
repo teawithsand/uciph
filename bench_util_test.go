@@ -49,6 +49,35 @@ func (edt *encDecTest) RunRNG(b *testing.B, rngf func() io.Reader) {
 	})
 }
 
+func (edt *encDecTest) RunHash(b *testing.B, hashf func() uciph.Hasher) {
+	sum := 0
+	for _, c := range edt.Cases {
+		sum += len(c)
+	}
+
+	hres := make([]byte, 256)
+	b.Run(edt.Name, func(b *testing.B) {
+		b.SetBytes(int64(sum))
+
+		hash := hashf()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			for _, c := range edt.Cases {
+				_, err := hash.Write(c)
+				if err != nil {
+					b.Error(err)
+				}
+			}
+
+			var err error
+			edtRes, err = hash.Sum(hres[:0])
+			if err != nil {
+				b.Error(err)
+			}
+		}
+	})
+}
+
 func (edt *encDecTest) RunEnc(b *testing.B, ef func() uciph.Encryptor) {
 	sum := 0
 	for _, c := range edt.Cases {
@@ -193,6 +222,34 @@ func benchmarkRNG(b *testing.B, rngf func() io.Reader) {
 	}
 	for _, t := range tests {
 		t.RunRNG(b, rngf)
+	}
+}
+
+func bechmarkHash(b *testing.B, hashf func() uciph.Hasher) {
+	tests := make([]encDecTest, 0)
+	{
+		t := encDecTest{}
+		t.AddCase(make([]byte, 1024*1024*8)).AutoName()
+		tests = append(tests, t)
+	}
+	{
+		t := encDecTest{}
+		for i := 0; i < 8; i++ {
+			t.AddCase(make([]byte, 1024*1024))
+		}
+		t.AutoName()
+		tests = append(tests, t)
+	}
+	{
+		t := encDecTest{}
+		for i := 0; i < 512; i++ {
+			t.AddCase(make([]byte, 1024))
+		}
+		t.AutoName()
+		tests = append(tests, t)
+	}
+	for _, t := range tests {
+		t.RunHash(b, hashf)
 	}
 }
 

@@ -29,7 +29,8 @@ type Verifier interface {
 	CheckSign(sign []byte) error
 }
 
-// ParsedDecKey is key, which is able to create multiple Decryptors.
+// ParsedVerKey is key, which is able to create multiple Verifiers.
+// Each verifier is able to verify sign for single data.
 type ParsedVerKey interface {
 	NewVerifier(options VerKeyOptions) Verifier
 }
@@ -40,8 +41,20 @@ type ParsedHMACKey interface {
 	NewHasher(options HasherOptions) Hasher
 }
 
+// Hasher is something capable of computing hashes.
+// It accepts data and creates hash sum form it.
 type Hasher interface {
 	io.Writer
 
 	Sum(appendTo []byte) (res []byte, err error)
+}
+
+type HasherFactory interface {
+	NewHasher(options HasherOptions) Hasher
+}
+
+type HasherFactoryFunc func(options HasherOptions) Hasher
+
+func (f HasherFactoryFunc) NewHasher(options HasherOptions) Hasher {
+	return f(options)
 }

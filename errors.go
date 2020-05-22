@@ -17,3 +17,9 @@ var ErrKeyInvalid = errors.New("uciph: Input data is not valid key")
 
 // ErrKeyTypeInvalid is returned when given type of key is not accepted in given context.
 var ErrKeyTypeInvalid = errors.New("uciph: Invalid input key type")
+
+// ErrHashNotAvailable is returend when given hash function is not available but reqested.
+var ErrHashNotAvailable = errors.New(
+	"uciph: hash.Hash availability check filed. Check out hash.Hash.Available() from golang STL for more info" +
+		"Note: Try import _ \"YOUR HASH PACKAGE LIKE crypto/sha256\"",
+)
