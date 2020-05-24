@@ -23,3 +23,6 @@ var ErrHashNotAvailable = errors.New(
 	"uciph: hash.Hash availability check filed. Check out hash.Hash.Available() from golang STL for more info" +
 		"Note: Try import _ \"YOUR HASH PACKAGE LIKE crypto/sha256\"",
 )
+
+// ErrSignInvalid is returned by verifier when sign it's given is invalid.
+var ErrSignInvalid = errors.New("uciph: Given sign is invalid! Sign verification filed")

@@ -28,6 +28,29 @@ func BenchmarkChaCha20RNG(b *testing.B) {
 	})
 }
 
+// FastRNG is STL rng so no more tests.
+func TestFastRNG_HasSameOutput_WhenSeedSame(t *testing.T) {
+	r1 := uciph.FastRNG(1234)
+	r2 := uciph.FastRNG(1234)
+	for i := 0; i < 100; i++ {
+		b1 := make([]byte, 1024)
+		b2 := make([]byte, 1024)
+		_, err := io.ReadFull(r1, b1[:])
+		if err != nil {
+			t.Error(err)
+		}
+
+		_, err = io.ReadFull(r2, b2[:])
+		if err != nil {
+			t.Error(err)
+		}
+
+		if bytes.Compare(b1, b2) != 0 {
+			t.Error("Slices different!")
+		}
+	}
+}
+
 func TestChaCha20RNG_HasSameOutput_WhenSeedSame(t *testing.T) {
 	s1 := make([]byte, 32)
 	s2 := make([]byte, 32)

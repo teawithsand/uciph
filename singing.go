@@ -1,13 +1,52 @@
 package uciph
 
-import "io"
+import (
+	"crypto"
+	"io"
+
+	_ "crypto/sha512"
+)
+
+// DefaultSigningHasherFactory contains default HasherFactory used
+// for shortening messages before signing them.
+var DefaultSigningHasherFactory = mustOk(NewCryptoHasherFactory(
+	crypto.SHA512,
+)).(HasherFactory)
+
+func mustOk(v interface{}, err error) interface{} {
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// SigKeygenOptions contains options for signing key.
+type SigKeygenOptions = interface{}
+
+// SigKeygen generates signing key.
+type SigKeygen interface {
+	GenSigKey(options SigKeygenOptions) (pk, sk []byte, err error)
+}
+
+// SigKeygenFunc is function, which satisifies SigKeygen interface.
+type SigKeygenFunc func(options SigKeygenOptions) (pk, sk []byte, err error)
+
+// GenSigKey makes SigKeygenFunc satisfy SigKeygen.
+func (f SigKeygenFunc) GenSigKey(options SigKeygenOptions) (pk, sk []byte, err error) {
+	return f(options)
+}
 
 // SigKeyOptions contains options, which may be used to create signer.
 type SigKeyOptions = interface{}
 
 // ParsedSigKey is key, which is able to create multiple Signers.
 type ParsedSigKey interface {
-	NewEncryptor(options SigKeyOptions) (Signer, error)
+	NewSigner(options SigKeyOptions) (Signer, error)
+}
+
+// SigKeyParser parses signing key.
+type SigKeyParser interface {
+	ParseSigKey(data []byte) (ParsedSigKey, error)
 }
 
 // Signer is something capable of signing data.
@@ -26,13 +65,24 @@ type VerKeyOptions = SigKeyOptions
 type Verifier interface {
 	io.Writer
 
-	CheckSign(sign []byte) error
+	Verify(sign []byte) error
 }
 
 // ParsedVerKey is key, which is able to create multiple Verifiers.
 // Each verifier is able to verify sign for single data.
 type ParsedVerKey interface {
 	NewVerifier(options VerKeyOptions) (Verifier, error)
+}
+
+// SigVerKeyParser is parser, which parses both signing and verifying keys.
+type SigVerKeyParser interface {
+	SigKeyParser
+	VerKeyParser
+}
+
+// VerKeyParser parses verification keys.
+type VerKeyParser interface {
+	ParseVerKey(data []byte) (ParsedVerKey, error)
 }
 
 // HasherOptions contains options, which are passed to hasher.
