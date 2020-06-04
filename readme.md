@@ -22,7 +22,7 @@ What it does implement right now:
 
 #### Encryption(asymmetric)
 * RSA 1024/2048/4096
-* Key exchange to asymmetric encryption, with symmetric algorithm.
+* Key exchange to asymmetric encryption(with symmetric algorithm)
 
 #### Signing
 * Ed25519
@@ -36,4 +36,4 @@ What it does implement right now:
 * Blank polyfils for most of the things
 * Streamming encryption designed for files(unlike SSL, use SSL for network streams)
 * RNG and PRNG utils
-* Nonce counter maintaining unique nonces (not constant time, does not have to usually)
+* Nonce counter maintaining unique nonces (not constant time, usually does not have to be)
