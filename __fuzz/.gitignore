@@ -1,5 +1,7 @@
-gopath_dir
+gopath_dir/*
 /*/**
 !/*/**.go
 !/*/go.mod
 !/*/go.sum
+
+!gopath_dir/.gitkeep
