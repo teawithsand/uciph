@@ -3,9 +3,11 @@ package pad_test
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"testing"
 
 	"github.com/teawithsand/uciph/pad"
+	"github.com/teawithsand/uciph/rand"
 )
 
 func TestCanPadMesasges(t *testing.T) {
@@ -52,11 +54,10 @@ func TestCanUnpadMessages(t *testing.T) {
 
 var useUnpadStuff int
 
-/*
 func BenchmarkUnpadMessage(b *testing.B) {
 	doBench := func(sz int, upsz int) {
 		buf := make([]byte, sz)
-		_, err := io.ReadFull(uciph.GetRNG(nil), buf)
+		_, err := io.ReadFull(rand.DefaultRNG(), buf)
 		if err != nil {
 			b.Error(err)
 		}
@@ -68,12 +69,12 @@ func BenchmarkUnpadMessage(b *testing.B) {
 		b.Run(fmt.Sprintf(
 			"unpad random %d bytes to %d",
 			len(buf),
-			uciph.IEC78164Padding.Unpad(buf),
+			pad.IEC78164Padding().Unpad(buf),
 		), func(b *testing.B) {
 			b.SetBytes(int64(len(buf)))
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				useUnpadStuff = uciph.IEC78164Padding.Unpad(buf)
+				useUnpadStuff = pad.IEC78164Padding().Unpad(buf)
 			}
 		})
 	}
@@ -86,4 +87,3 @@ func BenchmarkUnpadMessage(b *testing.B) {
 	doBench(1024*10, 1024*3)
 	doBench(1024*10, 1024*2)
 }
-*/

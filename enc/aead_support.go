@@ -5,9 +5,9 @@ import (
 	"io"
 
 	"github.com/teawithsand/uciph"
-	"github.com/teawithsand/uciph/enc/internal/subtle"
+	"github.com/teawithsand/uciph/cutil"
+	"github.com/teawithsand/uciph/enc/internal"
 	"github.com/teawithsand/uciph/rand"
-	"github.com/teawithsand/uciph/util"
 )
 
 // TODO(teawithsand): integrate good overlapping checks here
@@ -16,22 +16,22 @@ import (
 // NewCtrAEADEncryptor wraps any AEAD and uses it to encrypt chunks.
 // It uses nonce coutner to manage nonces.
 func NewCtrAEADEncryptor(aead cipher.AEAD, options interface{}) Encryptor {
-	var nc util.NonceCounter
+	var nc cutil.NonceCounter
 
 	// TODO(teawihtsand): allow NonceCounter from options
 	if nc == nil {
-		nc = util.NonceCounterForAEAD(aead)
+		nc = cutil.NonceCounterForAEAD(aead)
 	}
 	if aead.NonceSize() != nc.Len() {
 		panic("uciph/enc: Nonce length mismatch between cipher.AEAD and NonceCounter")
 	}
 	return EncryptorFunc(func(in, appendTo []byte) (res []byte, err error) {
-		if subtle.AnyOverlap(in, appendTo) && subtle.InexactOverlap(in, appendTo) {
+		if internal.AnyOverlap(in, appendTo) && internal.InexactOverlap(in, appendTo) {
 			appendTo = nil // make it work always, sometimes not in place(?)
 		}
 
 		defer func() {
-			err = nc.Increment() // is error set in defer? it should be AFAIK TODO(teawithsand): test it
+			err = nc.Increment()
 		}()
 		res = aead.Seal(appendTo, nc[:], in, nil)
 		return
@@ -41,17 +41,17 @@ func NewCtrAEADEncryptor(aead cipher.AEAD, options interface{}) Encryptor {
 // NewCtrAEADDecryptor wraps any AEAD and uses it to decrypt chunks.
 // It uses nonce coutner to manage nonces.
 func NewCtrAEADDecryptor(aead cipher.AEAD, options interface{}) Decryptor {
-	var nc util.NonceCounter
+	var nc cutil.NonceCounter
 
 	// TODO(teawihtsand): allow NonceCounter from options
 	if nc == nil {
-		nc = util.NonceCounterForAEAD(aead)
+		nc = cutil.NonceCounterForAEAD(aead)
 	}
 	if aead.NonceSize() != nc.Len() {
-		panic("uciph/enc: Nonce length mismatch between cipher.AEAD and NonceCounter")
+		panic("uciph/enc: Nonce length mismatch between cipher.AEAD and NonceCounter") // err here?
 	}
 	return DecryptorFunc(func(in, appendTo []byte) (res []byte, err error) {
-		if subtle.InexactOverlap(in, appendTo) {
+		if internal.InexactOverlap(in, appendTo) {
 			appendTo = nil // make it work always, sometimes not in place(?)
 		}
 
@@ -80,7 +80,7 @@ func NewRNGAEADEncryptor(aead cipher.AEAD, options interface{}) Encryptor {
 			return
 		}
 
-		if subtle.InexactOverlap(in, appendTo) {
+		if internal.InexactOverlap(in, appendTo) {
 			appendTo = nil // make it work always, sometimes not in place(?)
 		}
 
@@ -132,7 +132,7 @@ func NewRNGAEADDecryptor(aead cipher.AEAD, options interface{}) Decryptor {
 				return
 			}
 
-			if subtle.InexactOverlap(in, appendTo) {
+			if internal.InexactOverlap(in, appendTo) {
 				appendTo = nil // make it work always, sometimes not in place(?)
 			}
 

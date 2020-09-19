@@ -1,3 +1,0 @@
-Better overlapping data checks for slices contained here so functions do not panic
-
-Limits for ciphertext count per encryptor with nonce size or some different criteria(since this may panic as well)

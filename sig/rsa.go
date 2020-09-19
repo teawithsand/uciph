@@ -11,234 +11,208 @@ import (
 	"github.com/teawithsand/uciph/rand"
 )
 
-type rsaParser struct {
-	Size int
-}
+// RSAKeySize denotes RSA key size(in bits), which is accepted by this library.
+type RSAKeySize int
 
-// ParseSigKey parses signing key.
-func (p rsaParser) ParseSigKey(data []byte) (SigKey, error) {
-	secKey, err := x509.ParsePKCS1PrivateKey(data)
-	if err != nil {
-		return nil, err
-	}
-	if secKey.Size() != p.Size {
-		return nil, uciph.ErrInvalidKeySize
-	}
-	// Should primes be rabin-miller checked here?
-	// Or should it be fully predictable
+const (
+	RSA1024 RSAKeySize = 1024
+	RSA2048 RSAKeySize = 2048
+	RSA4096 RSAKeySize = 4096
+)
 
-	// check if key is valid and primes are prmes
-	err = secKey.Validate()
-	if err != nil {
-		return nil, err
-	}
-	return rsaSigKey(*secKey), nil
-}
-
-// ParseVerKey parses verifying key.
-func (p rsaParser) ParseVerKey(data []byte) (VerKey, error) {
-	pubKey, err := x509.ParsePKCS1PublicKey(data)
-	if err != nil {
-		return nil, err
-	}
-	if pubKey.Size() != p.Size {
-		return nil, uciph.ErrInvalidKeySize
-	}
-	return rsaVerKey(*pubKey), nil
-}
-
-// RSAKeyParser creates parser for RSA keys with specified size.
-// It returns nil if size is not supported.
-func RSAKeyParser(size int) SigVerKeyParser {
+// Check checks if RSA key is valid or not.
+func (s RSAKeySize) Check() (err error) {
+	size := int(s)
 	if size != 1024 && size != 1024*2 && size != 1024*4 {
-		return nil
+		return uciph.ErrInvalidKeySize
 	}
-	return &rsaParser{
-		Size: size,
-	}
+
+	return
 }
 
-// RSAKeygen creates RSA key generator for specified key size.
-// Note: despite the fact that RSA 1024 is allowed it should be used no more.
-// It's deprecated and attacker with enough funds(like goverment) is likely to be able to break it.
-func RSAKeygen(size int) (SigKeygen, error) {
-	if size != 1024 && size != 1024*2 && size != 1024*4 {
-		return nil, uciph.ErrInvalidKeySize
+// NewRSAKeygen creates RSA keygen for specified key size.
+func NewRSAKeygen(size RSAKeySize) (Keygen, error) {
+	err := size.Check()
+	if err != nil {
+		return nil, err
 	}
 
-	return SigKeygenFunc(func(options interface{}, vkAppendTo, skAppendTo []byte) (vk, sk []byte, err error) {
-		secKey, err := rsa.GenerateKey(rand.GetRNG(options), size)
+	return func(options interface{}, gk *GeneratedKeys) (err error) {
+		secKey, err := rsa.GenerateKey(rand.GetRNG(options), int(size))
 		if err != nil {
 			return
 		}
-		vkAppendTo = append(vkAppendTo, x509.MarshalPKCS1PublicKey(&secKey.PublicKey)...)
-		skAppendTo = append(skAppendTo, x509.MarshalPKCS1PrivateKey(secKey)...)
-		vk = vkAppendTo
-		sk = skAppendTo
+		gk.VerifyingKey = append(gk.VerifyingKey, x509.MarshalPKCS1PublicKey(&secKey.PublicKey)...)
+		gk.SigningKey = append(gk.SigningKey, x509.MarshalPKCS1PrivateKey(secKey)...)
 		return
-	}), nil
+	}, nil
 }
 
-type rsaSigKey rsa.PrivateKey
+// RSAKeygen generates RSA key with specified size.
+func RSAKeygen(options interface{}, size RSAKeySize, dst *GeneratedKeys) error {
+	kg, err := NewRSAKeygen(size)
+	if err != nil {
+		return err
+	}
+	return kg(options, dst)
+}
 
-type rsaVerKey rsa.PublicKey
-
-// NewSigner creates signer for given RSA secret key.
-func (k rsaSigKey) NewSigner(options interface{}) (Signer, error) {
-	hasher, err := GetSigningHasher(options)
+// NewRSASigKeyParser creates RSA signing key parser for specified key size.
+func NewRSASigKeyParser(size RSAKeySize) (SigKeyParser, error) {
+	err := size.Check()
 	if err != nil {
 		return nil, err
 	}
 
-	privK := rsa.PrivateKey(k)
-	rng := rand.GetRNG(options)
-
-	doSign := func(data, appendTo []byte) (res []byte, err error) {
-		// var h crypto.Hash
-		// TODO(teawithsand): auto determine hash here rather than forcing unknown hash
-		/*
-			if len(data) == 256/8 {
-				h = crypto.SHA256
-			} else if len(data) == 384/8 {
-				h = crypto.SHA384
-			} else if len(data) == 512/8 {
-				h = crypto.SHA512
-			} else {
-				panic("TODO REPORT ERROR INVALID DATA LENGTH")
-			}
-		*/
-
-		sign, err := rsa.SignPKCS1v15(rng, &privK, 0, data)
+	return func(data []byte) (SigKey, error) {
+		secKey, err := x509.ParsePKCS1PrivateKey(data)
 		if err != nil {
-			return
+			return nil, err
 		}
-		res = append(appendTo, sign...)
-		return
-	}
+		if secKey.Size() != int(size) {
+			return nil, uciph.ErrInvalidKeySize
+		}
+		// Should primes be rabin-miller checked here?
+		// Or should it be fully predictable
 
-	if hasher != nil {
-		return &hashSigner{
-			hasher: hasher,
-			doSign: doSign,
+		// check if key is valid and primes are prmes
+		err = secKey.Validate()
+		if err != nil {
+			return nil, err
+		}
+
+		return func(options interface{}) (Signer, error) {
+			hasher, err := GetSigningHasher(options)
+			if err != nil {
+				return nil, err
+			}
+
+			privK := rsa.PrivateKey(*secKey)
+			rng := rand.GetRNG(options)
+
+			doSign := func(data, appendTo []byte) (res []byte, err error) {
+				// var h crypto.Hash
+				// TODO(teawithsand): auto determine hash here rather than forcing unknown hash
+				/*
+					if len(data) == 256/8 {
+						h = crypto.SHA256
+					} else if len(data) == 384/8 {
+						h = crypto.SHA384
+					} else if len(data) == 512/8 {
+						h = crypto.SHA512
+					} else {
+						panic("TODO REPORT ERROR INVALID DATA LENGTH")
+					}
+				*/
+
+				sign, err := rsa.SignPKCS1v15(rng, &privK, 0, data)
+				if err != nil {
+					return
+				}
+				res = append(appendTo, sign...)
+				return
+			}
+
+			if hasher != nil {
+				return &hashSigner{
+					hasher: hasher,
+					doSign: doSign,
+				}, nil
+			}
+
+			return &bufferSigner{
+				buf:    bytes.NewBuffer(nil),
+				doSign: doSign,
+			}, nil
 		}, nil
-	}
-
-	return &bufferSigner{
-		buf:    bytes.NewBuffer(nil),
-		doSign: doSign,
 	}, nil
 }
 
-// NewVerifier creates verifeir for given RSA key.
-func (k rsaVerKey) NewVerifier(options interface{}) (Verifier, error) {
-	hasher, err := GetSigningHasher(options)
+// NewRSAVerKeyParser creates RSA verifying key parser for specified key size.
+func NewRSAVerKeyParser(size RSAKeySize) (VerKeyParser, error) {
+	err := size.Check()
 	if err != nil {
 		return nil, err
 	}
 
-	verK := rsa.PublicKey(k)
-	doVerify := func(data, sign []byte) error {
-		// TODO(teawithsand): auto determine hash here rather than forcing unknown hash
+	return func(data []byte) (VerKey, error) {
+		pubKey, err := x509.ParsePKCS1PublicKey(data)
+		if err != nil {
+			return nil, err
+		}
+		if pubKey.Size() != int(size) {
+			return nil, uciph.ErrInvalidKeySize
+		}
+		// Should primes be rabin-miller checked here?
+		// Or should it be fully predictable
 
-		var h crypto.Hash
+		// check if key is valid and primes are prmes
 		/*
-			if len(data) == 256/8 {
-				h = crypto.SHA256
-			} else if len(data) == 384/8 {
-				h = crypto.SHA384
-			} else if len(data) == 512/8 {
-				h = crypto.SHA512
-			} else {
-				panic("TODO REPORT ERROR INVALID DATA LENGTH")
+			err = pubKey.Validate()
+			if err != nil {
+				return nil, err
 			}
 		*/
 
-		err = rsa.VerifyPKCS1v15(&verK, h, data, sign)
-		if errors.Is(err, rsa.ErrVerification) {
-			err = uciph.ErrSignInvalid
-		}
-		return nil
-	}
+		return func(options interface{}) (Verifier, error) {
+			hasher, err := GetSigningHasher(options)
+			if err != nil {
+				return nil, err
+			}
 
-	if hasher != nil {
-		return &hashVerifier{
-			hasher:   hasher,
-			doVerify: doVerify,
+			verK := rsa.PublicKey(*pubKey)
+			doVerify := func(data, sign []byte) error {
+				// TODO(teawithsand): auto determine hash here rather than forcing unknown hash
+
+				var h crypto.Hash
+				/*
+					if len(data) == 256/8 {
+						h = crypto.SHA256
+					} else if len(data) == 384/8 {
+						h = crypto.SHA384
+					} else if len(data) == 512/8 {
+						h = crypto.SHA512
+					} else {
+						panic("TODO REPORT ERROR INVALID DATA LENGTH")
+					}
+				*/
+
+				err = rsa.VerifyPKCS1v15(&verK, h, data, sign)
+				if errors.Is(err, rsa.ErrVerification) {
+					err = uciph.ErrSignInvalid
+				}
+				return nil
+			}
+
+			if hasher != nil {
+				return &hashVerifier{
+					hasher:   hasher,
+					doVerify: doVerify,
+				}, nil
+			}
+
+			return &bufferVerifier{
+				buf:      bytes.NewBuffer(nil),
+				doVerify: doVerify,
+			}, nil
 		}, nil
-	}
-
-	return &bufferVerifier{
-		buf:      bytes.NewBuffer(nil),
-		doVerify: doVerify,
 	}, nil
 }
 
-/*
-// ParseSigKey parses signing key.
-func (ed25519parser) ParseSigKey(data []byte) (SigKey, error) {
-	var sk ed25519SigKey
-	if len(sk) != len(data) {
-		return nil, uciph.ErrKeyInvalid
-	}
-	copy(sk[:], data)
-	return sk, nil
-}
-
-// ParseVerKey parses verifying key.
-func (ed25519parser) ParseVerKey(data []byte) (VerKey, error) {
-	var vk ed25519VerKey
-	if len(vk) != len(data) {
-		return nil, uciph.ErrKeyInvalid
-	}
-	copy(vk[:], data)
-	return vk, nil
-}
-
-func (k ed25519SigKey) NewSigner(options interface{}) (Signer, error) {
-	hasher, err := GetSigningHasher(options)
+// ParseRSAVerKey parses RSA verifying key with specified size.
+func ParseRSAVerKey(data []byte, size RSAKeySize) (VerKey, error) {
+	vkp, err := NewRSAVerKeyParser(size)
 	if err != nil {
 		return nil, err
 	}
-	doSign := func(data, appendTo []byte) (res []byte, err error) {
-		sign := ed25519.Sign(ed25519.PrivateKey(k[:]), data)
-		res = append(appendTo, sign...)
-		return
-	}
-	if hasher != nil {
-		return &hashSigner{
-			hasher: hasher,
-			doSign: doSign,
-		}, nil
-	} else {
-		return &bufferSigner{
-			buf:    bytes.NewBuffer(nil),
-			doSign: doSign,
-		}, nil
-	}
+	return vkp(data)
 }
 
-func (k ed25519VerKey) NewVerifier(options interface{}) (Verifier, error) {
-	hasher, err := GetSigningHasher(options)
+// ParseRSASigKey parses RSA signing key with specified size.
+func ParseRSASigKey(data []byte, size RSAKeySize) (SigKey, error) {
+	skp, err := NewRSASigKeyParser(size)
 	if err != nil {
 		return nil, err
 	}
-	doVerify := func(data, sign []byte) error {
-		if !ed25519.Verify(ed25519.PublicKey(k[:]), data, sign) {
-			return uciph.ErrSignInvalid
-		}
-		return nil
-	}
-	if hasher != nil {
-		return &hashVerifier{
-			hasher:   hasher,
-			doVerify: doVerify,
-		}, nil
-	} else {
-		return &bufferVerifier{
-			buf:      bytes.NewBuffer(nil),
-			doVerify: doVerify,
-		}, nil
-	}
+	return skp(data)
 }
-
-*/

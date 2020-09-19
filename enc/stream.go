@@ -9,23 +9,6 @@ import (
 	"github.com/teawithsand/uciph"
 )
 
-// TODO(teawithsand): implement it
-
-// StreamEncryptor is encryptor, which processes data in streamming manner.
-// It has to be closed in order to flush rest of data, since StreamEncryptor may do buffering.
-type StreamEncryptor interface {
-	io.WriteCloser
-}
-
-// StreamDecryptor is decryptor, which processes data in streamming manner.
-// StreamDecryptor is guaranteed to find error once some occured.
-// It MAY NOT be able to find out that chunks are reordered or truncated.
-// This property is implementation-dependent.
-// If StreamDecryptor implements it, truncated error will be returned on close.
-type StreamDecryptor interface {
-	io.ReadCloser
-}
-
 type intEncoding int8
 
 func (e intEncoding) IsValid() bool {
@@ -33,7 +16,7 @@ func (e intEncoding) IsValid() bool {
 }
 
 func (e intEncoding) Size(n uint64) int {
-	var arr [9]byte
+	var arr [10]byte
 	switch e {
 	case ByteVar:
 		s := binary.PutUvarint(arr[:], n)
@@ -155,7 +138,7 @@ const (
 	Byte8   intEncoding = 8
 )
 
-type defaultStremEncryptor struct {
+type defaultStreamEncryptor struct {
 	DstBufferSize int
 
 	CurrentEncBufferSize int
@@ -172,7 +155,7 @@ type defaultStremEncryptor struct {
 	ErrorCache error
 }
 
-func (dse *defaultStremEncryptor) Close() (err error) {
+func (dse *defaultStreamEncryptor) Close() (err error) {
 	if dse.ErrorCache != nil {
 		return dse.ErrorCache
 	}
@@ -198,7 +181,7 @@ func (dse *defaultStremEncryptor) Close() (err error) {
 
 		// Write length if required
 		{
-			var sizeBuffer [9]byte
+			var sizeBuffer [10]byte
 			if dse.ChunkLengthEncoding.IsValid() {
 				sz := dse.ChunkCounterEncoding.Encode(sizeBuffer[:], uint64(len(buffer)))
 				_, err = dse.Sink.Write(buffer[:sz])
@@ -231,7 +214,7 @@ func (dse *defaultStremEncryptor) Close() (err error) {
 	return
 }
 
-func (dse *defaultStremEncryptor) Write(data []byte) (sz int, err error) {
+func (dse *defaultStreamEncryptor) Write(data []byte) (sz int, err error) {
 	if dse.ErrorCache != nil {
 		return 0, dse.ErrorCache
 	}
@@ -359,7 +342,7 @@ func (dse *defaultStremEncryptor) Write(data []byte) (sz int, err error) {
 	return
 }
 
-type authStreamDecryptor struct {
+type defaultStreamDecryptor struct {
 	DstBufferSize int
 
 	CurrentDecBufferSize int
@@ -378,11 +361,11 @@ type authStreamDecryptor struct {
 	ErrorCache error
 }
 
-func (asd *authStreamDecryptor) IsDone() bool {
+func (asd *defaultStreamDecryptor) IsDone() bool {
 	return asd.ErrorCache != nil
 }
 
-func (asd *authStreamDecryptor) Close() (err error) {
+func (asd *defaultStreamDecryptor) Close() (err error) {
 	if asd.ErrorCache == io.EOF {
 		return nil
 	} else if asd.ErrorCache != nil {
@@ -395,7 +378,7 @@ func (asd *authStreamDecryptor) Close() (err error) {
 	return
 }
 
-func (asd *authStreamDecryptor) Read(buf []byte) (sz int, err error) {
+func (asd *defaultStreamDecryptor) Read(buf []byte) (sz int, err error) {
 	if asd.ErrorCache != nil {
 		return 0, asd.ErrorCache
 	}
@@ -473,7 +456,8 @@ func (asd *authStreamDecryptor) Read(buf []byte) (sz int, err error) {
 			if chunkCounter == 0 {
 				if len(chunkBuffer) != chunkCounterSize {
 					// Invalid chunk counter value! Finalize chunk must not contain any data!
-					panic("NIY")
+					err = errors.New("stream: TODO error invalid chunk counter value")
+					return
 				}
 				if sz <= 0 {
 					// no data read in total so just return EOF
@@ -517,4 +501,24 @@ func (asd *authStreamDecryptor) Read(buf []byte) (sz int, err error) {
 	return
 }
 
-// TODO(teawithsand): consturctor functions and test for stream encryptor and decryptor implementations
+// NewDefaultStreamEncryptor creates DefaultStreamEncryptor from encryptor and writer.
+func NewDefaultStreamEncryptor(e Encryptor, w io.Writer) StreamEncryptor {
+	dse := &defaultStreamEncryptor{
+		Encryptor:            e,
+		ChunkCounterEncoding: ByteVar,
+		Sink:                 w,
+		EncBuffer:            make([]byte, 1024*1024), // TODO(teaiwthsand): make this configurable
+	}
+	return dse
+}
+
+// NewDefaultStreamDecryptor creates DefaultStreamDecryptor from decryptor and reader.
+func NewDefaultStreamDecryptor(d Decryptor, r io.Reader) StreamDecryptor {
+	dsd := &defaultStreamDecryptor{
+		Decryptor:            d,
+		ChunkCounterEncoding: ByteVar,
+		Source:               r,
+		MaxBufferSize:        1024 * 1024, // TODO(teawithsand): make this configurable value
+	}
+	return dsd
+}

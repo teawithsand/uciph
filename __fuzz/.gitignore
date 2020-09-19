@@ -1,0 +1,5 @@
+gopath_dir
+/*/**
+!/*/**.go
+!/*/go.mod
+!/*/go.sum

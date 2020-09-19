@@ -3,21 +3,26 @@ package enc_test
 import (
 	"testing"
 
+	"github.com/teawithsand/uciph/cbench"
 	"github.com/teawithsand/uciph/enc"
 )
 
-func TestBlankEncryptorDecryptor(t *testing.T) {
-	DoTestEncryptorDecryptor(t.Error, func() (enc.Encryptor, enc.Decryptor) {
+func TestBlankED(t *testing.T) {
+	DoTestED(t, func() (enc.Encryptor, enc.Decryptor) {
 		return enc.BlankEncryptor(), enc.BlankDecryptor()
-	}, testData{IsAEAD: false})
-}
-
-/*
-
-func BenchmarkBlankEncryptor(b *testing.B) {
-	benchmarkEncryptor(b, func() uciph.Encryptor {
-		return uciph.BlankEncryptor
+	}, TestEDConfig{
+		IsAEAD: false,
 	})
 }
 
-*/
+func BenchmarkBlankED(b *testing.B) {
+	cbe := cbench.EDBenchEngine{
+		Fac: func() (enc.Encryptor, enc.Decryptor) {
+			return enc.BlankEncryptor(), enc.BlankDecryptor()
+		},
+		Config: cbench.EDBenchConfig{
+			Runs: cbench.GenereateDefaultEDRuns(false),
+		},
+	}
+	cbe.RunEDBenchmark(b)
+}

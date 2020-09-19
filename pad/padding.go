@@ -2,6 +2,8 @@ package pad
 
 import "crypto/subtle"
 
+// TODO(teawithsand): make these interfaces functions, since using them as interfaces is quite pointless and
+//  leads to less readable code
 // TODO(teawithsand): test if these functions are indeed constatnt time
 
 // Padder is something able to apply padding to message.

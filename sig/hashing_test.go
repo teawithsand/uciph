@@ -39,11 +39,11 @@ func DoTestHasher(
 			if err != nil {
 				return
 			}
-			s1, err := h1.Sum(nil)
+			s1, err := h1.Finalize(nil)
 			if err != nil {
 				return
 			}
-			s2, err := h2.Sum(nil)
+			s2, err := h2.Finalize(nil)
 			if err != nil {
 				return
 			}
@@ -73,11 +73,11 @@ func DoTestHasher(
 					return
 				}
 			}
-			s1, err := h1.Sum(nil)
+			s1, err := h1.Finalize(nil)
 			if err != nil {
 				return
 			}
-			s2, err := h2.Sum(nil)
+			s2, err := h2.Finalize(nil)
 			if err != nil {
 				return
 			}
@@ -107,7 +107,7 @@ func TestCryptoSHA256Hasher(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		h, err := hf.NewHasher(nil)
+		h, err := hf(nil)
 		if err != nil {
 			t.Error(err)
 		}
@@ -121,7 +121,7 @@ func TestCryptoSHA512Hasher(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		h, err := hf.NewHasher(nil)
+		h, err := hf(nil)
 		if err != nil {
 			t.Error(err)
 		}
@@ -130,11 +130,7 @@ func TestCryptoSHA512Hasher(t *testing.T) {
 }
 
 func TestCryptoSHA256HMACHasher(t *testing.T) {
-	hkp, err := sig.NewHMACKeyParser(crypto.SHA256)
-	if err != nil {
-		t.Error(err)
-	}
-	kh, err := hkp.ParseMACKey([]byte{
+	hkp, err := sig.NewHMAC(crypto.SHA256, []byte{
 		1, 2, 3, 4,
 	})
 	if err != nil {
@@ -142,13 +138,15 @@ func TestCryptoSHA256HMACHasher(t *testing.T) {
 	}
 
 	DoTestHasher(t, func() sig.Hasher {
-		h, err := kh.NewHasher(nil)
+		h, err := hkp(nil)
 		if err != nil {
 			t.Error(err)
 		}
 		return h
 	})
 }
+
+// TODO(teawithsand): benchmarking with new benchmark engine
 
 /*
 func BenchmarkHashCryptoSHA256(b *testing.B) {

@@ -5,30 +5,9 @@ import (
 	"io"
 	"testing"
 
+	"github.com/teawithsand/uciph/cbench"
 	"github.com/teawithsand/uciph/rand"
 )
-
-/*
-func BenchmarkDefaultRNG(b *testing.B) {
-	benchmarkRNG(b, func() io.Reader { return rand.DefaultRNG })
-}
-
-func BenchmarkFastRNG(b *testing.B) {
-	benchmarkRNG(b, func() io.Reader {
-		return rand.FastRNG(12345) // some seed, it should not matter(?)
-	})
-}
-
-func BenchmarkChaCha20RNG(b *testing.B) {
-	benchmarkRNG(b, func() io.Reader {
-		r, err := rand.NewChaCha20RNG(make([]byte, 32)) // some seed, it should not matter(?)
-		if err != nil {
-			panic(err)
-		}
-		return r
-	})
-}
-*/
 
 // FastRNG is STL rng so no more tests.
 func TestFastRNG_HasSameOutput_WhenSeedSame(t *testing.T) {
@@ -141,4 +120,43 @@ func TestChaCha20RNG_HasDifferentOutput_WhenSeedDiffer(t *testing.T) {
 	if bytes.Compare(b1[:], b2[:]) == 0 {
 		t.Error("Slices are equal")
 	}
+}
+
+func BenchmarkDefaultRNG(b *testing.B) {
+	e := cbench.RNGBenchEngine{
+		Fac: func() rand.RNG { return rand.DefaultRNG() },
+		Config: cbench.RNGBenchConfig{
+			Runs: cbench.GenerateDefaultRNGRuns(),
+		},
+	}
+
+	e.RunRNGBenchmark(b)
+}
+
+func BenchmarkFastRNG(b *testing.B) {
+	e := cbench.RNGBenchEngine{
+		Fac: func() rand.RNG { return rand.DefaultRNG() },
+		Config: cbench.RNGBenchConfig{
+			Runs: cbench.GenerateDefaultRNGRuns(),
+		},
+	}
+
+	e.RunRNGBenchmark(b)
+}
+
+func BenchmarkChaCha20RNG(b *testing.B) {
+	e := cbench.RNGBenchEngine{
+		Fac: func() rand.RNG {
+			r, err := rand.NewChaCha20RNG(make([]byte, 32)) // some seed, it should not matter(?)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		},
+		Config: cbench.RNGBenchConfig{
+			Runs: cbench.GenerateDefaultRNGRuns(),
+		},
+	}
+
+	e.RunRNGBenchmark(b)
 }

@@ -4,6 +4,7 @@ import (
 	"crypto"
 	"crypto/hmac"
 	"hash"
+	"io"
 
 	"github.com/teawithsand/uciph"
 )
@@ -17,7 +18,19 @@ func VerifyDigestEqual(d1, d2 []byte) bool {
 }
 */
 
-// NewCryptoHasherFac creates HasherFactory form golang's std hash.Hash
+// HasherFac is something, which creates hasher.
+// It's also used for HMAC.
+type HasherFac = func(options interface{}) (Hasher, error)
+
+// Hasher is something capable of computing hashes.
+// It accepts data and creates hash sum form it.
+type Hasher interface {
+	io.Writer
+
+	Finalize(appendTo []byte) (res []byte, err error)
+}
+
+// NewCryptoHasherFac creates HasherFac form golang's std hash.Hash
 // for instance hash.SHA256.
 func NewCryptoHasherFac(h crypto.Hash) (fac HasherFac, err error) {
 	if !h.Available() {
@@ -25,7 +38,7 @@ func NewCryptoHasherFac(h crypto.Hash) (fac HasherFac, err error) {
 		return
 	}
 
-	fac = HasherFacFunc(func(options interface{}) (Hasher, error) {
+	fac = HasherFac(func(options interface{}) (Hasher, error) {
 		return &stlHasher{
 			hash: h.New(),
 		}, nil
@@ -33,19 +46,17 @@ func NewCryptoHasherFac(h crypto.Hash) (fac HasherFac, err error) {
 	return
 }
 
-// NewHMACKeyParser creates HMACKeyParser for specified hash algorithm.
-func NewHMACKeyParser(h crypto.Hash) (parser MACKeyParser, err error) {
+// NewHMAC creates HasherFac from golang's std hash.Hash and key.
+func NewHMAC(h crypto.Hash, key []byte) (fac HasherFac, err error) {
 	if !h.Available() {
 		err = uciph.ErrHashNotAvailable
 		return
 	}
 
-	parser = MACKeyParserFunc(func(data []byte) (MACKey, error) {
-		return MACKeyFunc(func(options interface{}) (Hasher, error) {
-			return &stlHasher{
-				hash: hmac.New(h.New, data),
-			}, nil
-		}), nil
+	fac = HasherFac(func(options interface{}) (Hasher, error) {
+		return &stlHasher{
+			hash: hmac.New(h.New, key),
+		}, nil
 	})
 	return
 }
@@ -58,7 +69,7 @@ func (h *stlHasher) Write(d []byte) (sz int, err error) {
 	return h.hash.Write(d)
 }
 
-func (h *stlHasher) Sum(appendTo []byte) (res []byte, err error) {
+func (h *stlHasher) Finalize(appendTo []byte) (res []byte, err error) {
 	res = h.hash.Sum(appendTo)
 	return
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"testing"
 
 	"github.com/teawithsand/uciph/enc"
 	"github.com/teawithsand/uciph/rand"
@@ -21,25 +22,23 @@ func makeTestChunks(r io.Reader, sizes ...int) [][]byte {
 	return res
 }
 
-type testData struct {
+type TestEDConfig struct {
 	IsAEAD bool
 }
 
-// TODO(teawithsand): test for overlapping slices(since it may crash now)
-func DoTestEncryptorDecryptor(
-	rep func(args ...interface{}), // by default t.Error or b.Error
+func DoTestED(
+	t *testing.T,
 	fac func() (enc.Encryptor, enc.Decryptor),
-	td testData,
+	config TestEDConfig,
 ) {
-	assert := func(err error) {
+	assert := func(t *testing.T, err error) {
 		if err != nil {
-			rep(err)
+			t.Error(err)
 		}
 	}
 
-	// 1. Enc/dec test
-	{
-		test := func(chunks [][]byte) (err error) {
+	t.Run("TestEncryptDecryptValid", func(t *testing.T) {
+		testPass := func(chunks [][]byte) (err error) {
 			e, d := fac()
 
 			res := make([][]byte, len(chunks))
@@ -68,52 +67,54 @@ func DoTestEncryptorDecryptor(
 
 			// 1. Small single chunk
 			for i := 0; i < 32; i++ {
-				assert(test(makeTestChunks(rand.ZeroRNG(), i)))
+				assert(t, testPass(makeTestChunks(rand.ZeroRNG(), i)))
 			}
 
 			// 2. Multiple chunks
-			assert(test(makeTestChunks(rng, 1024)))
-			assert(test(makeTestChunks(rng, 1024, 1024)))
-			assert(test(makeTestChunks(rng, 1024, 1024, 1024)))
-			assert(test(makeTestChunks(rng, 1024, 1024, 1024, 1024)))
+			assert(t, testPass(makeTestChunks(rng, 1024)))
+			assert(t, testPass(makeTestChunks(rng, 1024, 1024)))
+			assert(t, testPass(makeTestChunks(rng, 1024, 1024, 1024)))
+			assert(t, testPass(makeTestChunks(rng, 1024, 1024, 1024, 1024)))
 		}
 		run(rand.ZeroRNG())
 		run(rand.DefaultRNG())
-	}
+	})
 
-	// 2. Expect failure - bad key test
-	if td.IsAEAD {
-		test := func(chunk []byte) (err error) {
-			e, _ := fac()
-			chunk, err = e.Encrypt(chunk, nil)
-			if err != nil {
+	if config.IsAEAD {
+		t.Run("TestDecryptFailsOnBadKey", func(t *testing.T) {
+			testPass := func(chunk []byte) (err error) {
+				e, _ := fac()
+				chunk, err = e.Encrypt(chunk, nil)
+				if err != nil {
+					return
+				}
+
+				_, d := fac()
+				_, err = d.Decrypt(chunk, nil)
+				if err == nil {
+					err = errors.New("Error is nil but expected it not to be")
+				} else {
+					err = nil
+				}
 				return
 			}
 
-			_, d := fac()
-			_, err = d.Decrypt(chunk, nil)
-			if err == nil {
-				err = errors.New("Error is nil but expected it not to be")
-			} else {
-				err = nil
-			}
-			return
-		}
+			// assert(t, testPass([]byte{1, 2, 3}))
 
-		run := func(rng io.Reader) {
-
-			// 1. Small single chunk
-			for i := 0; i < 32; i++ {
-				assert(test(makeTestChunks(rand.ZeroRNG(), i)[0]))
+			run := func(rng io.Reader) {
+				// 1. Small single chunk
+				for i := 0; i < 32; i++ {
+					assert(t, testPass(makeTestChunks(rng, i)[0]))
+				}
 			}
-		}
-		run(rand.ZeroRNG())
-		run(rand.DefaultRNG())
+			run(rand.ZeroRNG())
+			run(rand.DefaultRNG())
+
+		})
 	}
-	// 3. Decrypt partial overlapping test
-	test := func(chunk []byte) (err error) {
-		// 1. Valid overlap
-		{
+
+	t.Run("TestDecryptOverlapFull", func(t *testing.T) {
+		testPass := func(chunk []byte) (err error) {
 			e, d := fac()
 			chunk, err = e.Encrypt(chunk, nil)
 			if err != nil {
@@ -124,12 +125,25 @@ func DoTestEncryptorDecryptor(
 			if err != nil {
 				return
 			}
+
+			return
 		}
 
-		//  TODO(teawithsand): make this test pass
-		// 2. Invalid overlap(should not crash)
-		/*
-			{
+		run := func(rng io.Reader) {
+			// 1. Small single chunk
+			for i := 0; i < 32; i++ {
+				assert(t, testPass(makeTestChunks(rng, i)[0]))
+			}
+		}
+
+		run(rand.ZeroRNG())
+		run(rand.DefaultRNG())
+	})
+
+	/*
+		// TODO(teawithsand): make this test pass
+		t.Run("TestDecryptOverlapPartial", func(t *testing.T) {
+			testPass := func(chunk []byte) (err error) {
 				e, d := fac()
 				chunk, err = e.Encrypt(chunk, nil)
 				if err != nil {
@@ -142,20 +156,19 @@ func DoTestEncryptorDecryptor(
 				} else if err != nil {
 					return
 				}
+
+				return
 			}
-		*/
 
-		return
-	}
+			run := func(rng io.Reader) {
+				// 1. Small single chunk
+				for i := 0; i < 32; i++ {
+					assert(t, testPass(makeTestChunks(rng, i)[0]))
+				}
+			}
 
-	run := func(rng io.Reader) {
-
-		// 1. Small single chunk
-		for i := 0; i < 32; i++ {
-			assert(test(makeTestChunks(rand.ZeroRNG(), i)[0]))
-		}
-	}
-	run(rand.ZeroRNG())
-	run(rand.DefaultRNG())
-
+			run(rand.ZeroRNG())
+			run(rand.DefaultRNG())
+		})
+	*/
 }
