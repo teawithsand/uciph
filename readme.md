@@ -21,7 +21,6 @@ What it does implement right now:
 * ChaCha20 PRNG
 
 #### Encryption(asymmetric)
-* RSA 1024/2048/4096
 * Key exchange to asymmetric encryption(with symmetric algorithm)
 
 #### Signing
