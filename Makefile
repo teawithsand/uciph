@@ -3,7 +3,7 @@ ci:
 	go test $(DIRS)
 	
 
-DIRS = . ./sig ./cutil ./rand ./pad ./enc ./cbench ./kx
+DIRS = . ./sig ./cutil ./rand ./pad ./enc ./cbench ./kx ./ctest ./cutil/pwhash ./cutil/token
 FUZZERS = fuzz_stream_decrypt
 
 TEST_TIMEOUT=5m

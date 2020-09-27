@@ -25,14 +25,14 @@ const (
 
 // NonceModeOptions specifies options, which have NonceMode setting.
 type NonceModeOptions interface {
-	NonceMode() NonceMode
+	GetNonceMode() NonceMode
 }
 
 // GetNonceMode gets nonce mode from specified options.
 func GetNonceMode(options interface{}) (nm NonceMode) {
 	nm = NonceModeDefault
 	if nopts, ok := options.(NonceModeOptions); ok {
-		nm = nopts.NonceMode()
+		nm = nopts.GetNonceMode()
 	}
 	return
 }

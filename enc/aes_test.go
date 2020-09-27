@@ -5,16 +5,10 @@ import (
 	"testing"
 
 	"github.com/teawithsand/uciph/cbench"
+	"github.com/teawithsand/uciph/copts"
+	"github.com/teawithsand/uciph/ctest"
 	"github.com/teawithsand/uciph/enc"
 )
-
-type nmopts struct {
-	nm enc.NonceMode
-}
-
-func (o nmopts) NonceMode() enc.NonceMode {
-	return o.nm
-}
 
 func TestAESED(t *testing.T) {
 	for _, ks := range []enc.AESKeySize{
@@ -23,12 +17,8 @@ func TestAESED(t *testing.T) {
 		enc.AES256,
 	} {
 		ks := ks
-		var encOpts interface{} = nmopts{
-			nm: enc.NonceModeRandom,
-		}
-		var decOpts interface{} = nmopts{
-			nm: enc.NonceModeRandom,
-		}
+		var encOpts interface{} = copts.Options{}.WithNonceMode(enc.NonceModeRandom)
+		decOpts := encOpts
 		fac := func() (enc.Encryptor, enc.Decryptor) {
 			rawKey, err := enc.AESKeygen(nil, ks, nil)
 			if err != nil {
@@ -53,23 +43,19 @@ func TestAESED(t *testing.T) {
 			return enc, dec
 		}
 		t.Run(fmt.Sprintf("RandomNonce_AES%d", int(ks)), func(t *testing.T) {
-			DoTestED(t, fac, TestEDConfig{
+			ctest.DoTestED(t, fac, ctest.TestEDConfig{
 				IsAEAD: true,
 			})
 		})
 		t.Run(fmt.Sprintf("NonceCounter_AES%d", int(ks)), func(t *testing.T) {
-			DoTestED(t, fac, TestEDConfig{
+			ctest.DoTestED(t, fac, ctest.TestEDConfig{
 				IsAEAD: true,
 			})
 
 			// swap nonce mode and run again
-			encOpts = nmopts{
-				nm: enc.NonceModeCounter,
-			}
-			decOpts = nmopts{
-				nm: enc.NonceModeCounter,
-			}
-			DoTestED(t, fac, TestEDConfig{
+			encOpts = copts.Options{}.WithNonceMode(enc.NonceModeCounter)
+			decOpts = encOpts
+			ctest.DoTestED(t, fac, ctest.TestEDConfig{
 				IsAEAD: true,
 			})
 		})
@@ -78,12 +64,8 @@ func TestAESED(t *testing.T) {
 }
 
 func BenchmarkAESED(b *testing.B) {
-	var encOpts interface{} = nmopts{
-		nm: enc.NonceModeRandom,
-	}
-	var decOpts interface{} = nmopts{
-		nm: enc.NonceModeRandom,
-	}
+	var encOpts interface{} = copts.Options{}.WithNonceMode(enc.NonceModeRandom)
+	var decOpts interface{} = copts.Options{}.WithNonceMode(enc.NonceModeRandom)
 	fac := func() (enc.Encryptor, enc.Decryptor) {
 		rawKey, err := enc.XChaCha20Poly1305Keygen(nil, nil)
 		if err != nil {
@@ -119,12 +101,8 @@ func BenchmarkAESED(b *testing.B) {
 		cbe.RunEDBenchmark(b)
 	})
 
-	encOpts = nmopts{
-		nm: enc.NonceModeCounter,
-	}
-	decOpts = nmopts{
-		nm: enc.NonceModeCounter,
-	}
+	encOpts = copts.Options{}.WithNonceMode(enc.NonceModeCounter)
+	decOpts = copts.Options{}.WithNonceMode(enc.NonceModeCounter)
 
 	b.Run("CounterNonce", func(b *testing.B) {
 		cbe := cbench.EDBenchEngine{

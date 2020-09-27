@@ -4,16 +4,14 @@ import (
 	"testing"
 
 	"github.com/teawithsand/uciph/cbench"
+	"github.com/teawithsand/uciph/copts"
+	"github.com/teawithsand/uciph/ctest"
 	"github.com/teawithsand/uciph/enc"
 )
 
 func TestChaCha20ED(t *testing.T) {
-	var encOpts interface{} = nmopts{
-		nm: enc.NonceModeRandom,
-	}
-	var decOpts interface{} = nmopts{
-		nm: enc.NonceModeRandom,
-	}
+	var encOpts interface{} = copts.Options{}.WithNonceMode(enc.NonceModeRandom)
+	var decOpts interface{} = copts.Options{}.WithNonceMode(enc.NonceModeRandom)
 	fac := func() (enc.Encryptor, enc.Decryptor) {
 		rawKey, err := enc.ChaCha20Poly1305Keygen(nil, nil)
 		if err != nil {
@@ -37,29 +35,21 @@ func TestChaCha20ED(t *testing.T) {
 		}
 		return enc, dec
 	}
-	DoTestED(t, fac, TestEDConfig{
+	ctest.DoTestED(t, fac, ctest.TestEDConfig{
 		IsAEAD: true,
 	})
 
 	// swap nonce mode and run again
-	encOpts = nmopts{
-		nm: enc.NonceModeCounter,
-	}
-	decOpts = nmopts{
-		nm: enc.NonceModeCounter,
-	}
-	DoTestED(t, fac, TestEDConfig{
+	encOpts = copts.Options{}.WithNonceMode(enc.NonceModeCounter)
+	decOpts = copts.Options{}.WithNonceMode(enc.NonceModeCounter)
+	ctest.DoTestED(t, fac, ctest.TestEDConfig{
 		IsAEAD: true,
 	})
 }
 
 func TestXChaCha20ED(t *testing.T) {
-	var encOpts interface{} = nmopts{
-		nm: enc.NonceModeRandom,
-	}
-	var decOpts interface{} = nmopts{
-		nm: enc.NonceModeRandom,
-	}
+	var encOpts interface{} = copts.Options{}.WithNonceMode(enc.NonceModeRandom)
+	var decOpts interface{} = copts.Options{}.WithNonceMode(enc.NonceModeRandom)
 	fac := func() (enc.Encryptor, enc.Decryptor) {
 		rawKey, err := enc.ChaCha20Poly1305Keygen(nil, nil)
 		if err != nil {
@@ -83,29 +73,20 @@ func TestXChaCha20ED(t *testing.T) {
 		}
 		return enc, dec
 	}
-	DoTestED(t, fac, TestEDConfig{
+	ctest.DoTestED(t, fac, ctest.TestEDConfig{
 		IsAEAD: true,
 	})
 
 	// swap nonce mode and run again
-	encOpts = nmopts{
-		nm: enc.NonceModeCounter,
-	}
-	decOpts = nmopts{
-		nm: enc.NonceModeCounter,
-	}
-	DoTestED(t, fac, TestEDConfig{
+	encOpts = copts.Options{}.WithNonceMode(enc.NonceModeCounter)
+	decOpts = copts.Options{}.WithNonceMode(enc.NonceModeCounter)
+	ctest.DoTestED(t, fac, ctest.TestEDConfig{
 		IsAEAD: true,
 	})
 }
 
 func BenchmarkChaCha20Poly1305ED(b *testing.B) {
-	var encOpts interface{} = nmopts{
-		nm: enc.NonceModeRandom,
-	}
-	var decOpts interface{} = nmopts{
-		nm: enc.NonceModeRandom,
-	}
+	opts := copts.Options{}.WithNonceMode(enc.NonceModeRandom)
 	fac := func() (enc.Encryptor, enc.Decryptor) {
 		rawKey, err := enc.XChaCha20Poly1305Keygen(nil, nil)
 		if err != nil {
@@ -119,11 +100,11 @@ func BenchmarkChaCha20Poly1305ED(b *testing.B) {
 		if err != nil {
 			b.Error(err)
 		}
-		enc, err := ek(encOpts)
+		enc, err := ek(opts)
 		if err != nil {
 			b.Error(err)
 		}
-		dec, err := dk(decOpts)
+		dec, err := dk(opts)
 		if err != nil {
 			b.Error(err)
 		}
@@ -141,12 +122,7 @@ func BenchmarkChaCha20Poly1305ED(b *testing.B) {
 		cbe.RunEDBenchmark(b)
 	})
 
-	encOpts = nmopts{
-		nm: enc.NonceModeCounter,
-	}
-	decOpts = nmopts{
-		nm: enc.NonceModeCounter,
-	}
+	opts = opts.WithNonceMode(enc.NonceModeCounter)
 
 	b.Run("CounterNonce", func(b *testing.B) {
 		cbe := cbench.EDBenchEngine{
@@ -160,12 +136,8 @@ func BenchmarkChaCha20Poly1305ED(b *testing.B) {
 }
 
 func BenchmarkXChaCha20Poly1305ED(b *testing.B) {
-	var encOpts interface{} = nmopts{
-		nm: enc.NonceModeRandom,
-	}
-	var decOpts interface{} = nmopts{
-		nm: enc.NonceModeRandom,
-	}
+	opts := copts.Options{}.WithNonceMode(enc.NonceModeRandom)
+
 	fac := func() (enc.Encryptor, enc.Decryptor) {
 		rawKey, err := enc.XChaCha20Poly1305Keygen(nil, nil)
 		if err != nil {
@@ -179,11 +151,11 @@ func BenchmarkXChaCha20Poly1305ED(b *testing.B) {
 		if err != nil {
 			b.Error(err)
 		}
-		enc, err := ek(encOpts)
+		enc, err := ek(opts)
 		if err != nil {
 			b.Error(err)
 		}
-		dec, err := dk(decOpts)
+		dec, err := dk(opts)
 		if err != nil {
 			b.Error(err)
 		}
@@ -201,12 +173,7 @@ func BenchmarkXChaCha20Poly1305ED(b *testing.B) {
 		cbe.RunEDBenchmark(b)
 	})
 
-	encOpts = nmopts{
-		nm: enc.NonceModeCounter,
-	}
-	decOpts = nmopts{
-		nm: enc.NonceModeCounter,
-	}
+	opts = opts.WithNonceMode(enc.NonceModeCounter)
 
 	b.Run("CounterNonce", func(b *testing.B) {
 		cbe := cbench.EDBenchEngine{

@@ -4,13 +4,14 @@ import (
 	"testing"
 
 	"github.com/teawithsand/uciph/cbench"
+	"github.com/teawithsand/uciph/ctest"
 	"github.com/teawithsand/uciph/enc"
 )
 
 func TestBlankED(t *testing.T) {
-	DoTestED(t, func() (enc.Encryptor, enc.Decryptor) {
+	ctest.DoTestED(t, func() (enc.Encryptor, enc.Decryptor) {
 		return enc.BlankEncryptor(), enc.BlankDecryptor()
-	}, TestEDConfig{
+	}, ctest.TestEDConfig{
 		IsAEAD: false,
 	})
 }

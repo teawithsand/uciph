@@ -61,14 +61,14 @@ func FastRNG(seed int64) RNG {
 
 // RNGOptions is kind of options, which provides custom RNG.
 type RNGOptions interface {
-	RNG() RNG
+	GetRNG() RNG
 }
 
 // GetRNG returns RNG from options or DefaultRNG.
 func GetRNG(options interface{}) (rng RNG) {
 	ropt, ok := options.(RNGOptions)
 	if ok {
-		rng = ropt.RNG()
+		rng = ropt.GetRNG()
 	}
 	if rng == nil {
 		rng = DefaultRNG()

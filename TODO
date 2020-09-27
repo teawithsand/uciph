@@ -1,0 +1,5 @@
+Multi-module algorithm separation list:
+1. Make ctest contain all utils responsible for testing
+2. Move all testing, which requires algorithms to separate package (atest?)
+3. Move all implementations with algorithms to separate packages in algo directory
+4. Add go.mod to all packages in algo directory

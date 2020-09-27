@@ -1,4 +1,4 @@
-package enc_test
+package ctest
 
 import (
 	"bytes"
@@ -56,7 +56,7 @@ func DoTestED(
 					return
 				}
 				if bytes.Compare(data, chunks[i]) != 0 {
-					err = errors.New("Input and output differ!")
+					err = errors.New("Input and output differ")
 					return
 				}
 			}
