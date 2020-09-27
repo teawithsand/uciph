@@ -22,11 +22,11 @@ func (m *EncryptingManager) IssueToken(data interface{}) (token []byte, err erro
 }
 
 // LoadToken decrypts data, and deserializes it.
-func (m *EncryptingManager) LoadToken(token []byte) (res interface{}, err error) {
+func (m *EncryptingManager) LoadToken(token []byte, dst interface{}) (err error) {
 	decToken, err := m.DecFac().Decrypt(token, nil)
 	if err != nil {
 		return
 	}
-	res, err = m.Manager.LoadToken(decToken)
+	err = m.Manager.LoadToken(decToken, dst)
 	return
 }

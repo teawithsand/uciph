@@ -26,7 +26,7 @@ func (tle *TokenLoadError) Unwrap() error {
 // Manager is something able to issue and load tokens.
 type Manager interface {
 	IssueToken(data interface{}) (token []byte, err error)
-	LoadToken(token []byte) (res interface{}, err error)
+	LoadToken(token []byte, dst interface{}) (err error)
 }
 
 // Base64Manager wraps other manager and base64 encodes them with encoding it's given.
@@ -52,13 +52,13 @@ func (m *Base64Manager) IssueToken(data interface{}) (token []byte, err error) {
 	return
 }
 
-func (m *Base64Manager) LoadToken(token []byte) (res interface{}, err error) {
+func (m *Base64Manager) LoadToken(token []byte, dst interface{}) (err error) {
 	decodedToken, err := m.Encoding.DecodeString(string(token))
 	if err != nil {
 		err = &TokenLoadError{Err: err}
 		return
 	}
 
-	res, err = m.Manager.LoadToken(decodedToken)
+	err = m.Manager.LoadToken(decodedToken, dst)
 	return
 }

@@ -6,12 +6,14 @@ import "encoding/json"
 type Marshaler = func(in interface{}) (out []byte, err error)
 
 // Unmarshaler is responsible for deserializing token data from bytes.
-type Unmarshaler = func(data []byte) (res interface{}, err error)
+type Unmarshaler = func(data []byte, dst interface{}) (err error)
 
 // JSONMarshaler marsahls any type of token data as JSON.
 // It can be reverted for specific type with JSONUnmarshaler.
-var JSONMarshaler Marshaler = json.Marshal
+// var JSONMarshaler Marshaler = json.Marshal
+var JSONUnmarshaler Unmarshaler = json.Unmarshal
 
+/*
 // JSONUnmarshaler unmarshals given type of token data using factory.
 // Factory has to return POINTER TYPE of deserialized struct in order to make it work.
 func JSONUnmarshaler(fac func() interface{}) Unmarshaler {
@@ -21,7 +23,7 @@ func JSONUnmarshaler(fac func() interface{}) Unmarshaler {
 		return
 	})
 }
-
+*/
 // MarshalingManager is simplest possible token manager.
 // The only thing it does it marshalling token with
 type MarshalingManager struct {
@@ -36,8 +38,8 @@ func (m *MarshalingManager) IssueToken(data interface{}) (token []byte, err erro
 }
 
 // LoadToken decrypts data, and deserializes it.
-func (m *MarshalingManager) LoadToken(token []byte) (res interface{}, err error) {
-	res, err = m.Unmarshaler(token)
+func (m *MarshalingManager) LoadToken(token []byte, dst interface{}) (err error) {
+	err = m.Unmarshaler(token, dst)
 	if err != nil {
 		err = &TokenLoadError{err}
 	}

@@ -1,6 +1,7 @@
 package token_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"testing"
@@ -26,12 +27,9 @@ func (ttd *TestTokenData) GetIssuedAt() time.Time {
 	return ttd.IssuedAt
 }
 
-var TestTokenDataUnmarshaler = token.JSONUnmarshaler(func() interface{} {
-	return &TestTokenData{}
-})
 var TTDManager token.Manager = &token.MarshalingManager{
-	Marshaler:   token.JSONMarshaler,
-	Unmarshaler: TestTokenDataUnmarshaler,
+	Marshaler:   json.Marshal,
+	Unmarshaler: json.Unmarshal,
 }
 
 func NewTTD(text string) *TestTokenData {
@@ -53,13 +51,12 @@ func DoTestTokenManager(t *testing.T, cfg TokenManagerTestConfig) {
 			return
 		}
 
-		ld1, err := tm.LoadToken(token)
+		pld1 := &TestTokenData{}
+		err = tm.LoadToken(token, pld1)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-
-		pld1 := ld1.(*TestTokenData)
 
 		if d1.Text != pld1.Text {
 			t.Error(fmt.Errorf("Token data mismatch: %+#v ;;; %+#v", *d1, *pld1))
@@ -79,7 +76,7 @@ func DoTestTokenManager(t *testing.T, cfg TokenManagerTestConfig) {
 				return
 			}
 
-			_, err = tm2.LoadToken(token1)
+			err = tm2.LoadToken(token1, &TestTokenData{})
 			if err == nil {
 				t.Error("No error, but expected one")
 			}
@@ -91,8 +88,8 @@ func TestMarshalingManager(t *testing.T) {
 	DoTestTokenManager(t, TokenManagerTestConfig{
 		Fac: func() token.Manager {
 			return &token.MarshalingManager{
-				Marshaler:   token.JSONMarshaler,
-				Unmarshaler: TestTokenDataUnmarshaler,
+				Marshaler:   json.Marshal,
+				Unmarshaler: json.Unmarshal,
 			}
 		},
 	})

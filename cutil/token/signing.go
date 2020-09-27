@@ -46,7 +46,7 @@ func (m *SigningManger) IssueToken(data interface{}) (token []byte, err error) {
 }
 
 // LoadToken decrypts data, and deserializes it.
-func (m *SigningManger) LoadToken(token []byte) (res interface{}, err error) {
+func (m *SigningManger) LoadToken(token []byte, dst interface{}) (err error) {
 	rd := bytes.NewReader(token)
 	signSizeVarint, err := binary.ReadUvarint(rd)
 	if err != nil {
@@ -76,7 +76,7 @@ func (m *SigningManger) LoadToken(token []byte) (res interface{}, err error) {
 		return
 	}
 
-	res, err = m.Manager.LoadToken(tokenData)
+	err = m.Manager.LoadToken(tokenData, dst)
 	if err != nil {
 		return
 	}

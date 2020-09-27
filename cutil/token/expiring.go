@@ -25,8 +25,8 @@ type ExpireManager struct {
 }
 
 // LoadToken loads token data using underlying manager, and chck
-func (m *ExpireManager) LoadToken(token []byte) (res interface{}, err error) {
-	res, err = m.Manager.LoadToken(token)
+func (m *ExpireManager) LoadToken(token []byte, dst interface{}) (err error) {
+	err = m.Manager.LoadToken(token, dst)
 	if err != nil {
 		return
 	}
@@ -37,7 +37,7 @@ func (m *ExpireManager) LoadToken(token []byte) (res interface{}, err error) {
 		now = time.Now()
 	}
 
-	cad, ok := res.(CreatedAtData)
+	cad, ok := dst.(CreatedAtData)
 	if ok {
 		createdAt := cad.GetIssuedAt()
 		livesFor := now.Sub(createdAt)
@@ -54,7 +54,7 @@ func (m *ExpireManager) LoadToken(token []byte) (res interface{}, err error) {
 
 		if m.IsExpired != nil {
 			var expired bool
-			expired, err = m.IsExpired(res, livesFor)
+			expired, err = m.IsExpired(dst, livesFor)
 			if err != nil {
 				return
 			}
