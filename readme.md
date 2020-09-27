@@ -1,6 +1,3 @@
-### Work in progress
-It's not ready yet.
-
 # μCiph 
 μCiph is crypto library created in order to:
 1. Solve common problems, like stream encryption to encrypt big files
@@ -12,9 +9,13 @@ Provide wrappers for commonly used cryptographic "primitives" and allow easy swa
 
 It does not implements algoritms itself, except:
 * Message padding scheme(ISO/IEC 7816-4) (is NOT constant time yet)
-* Simple PoW algorithm using hash functions
 
 What it does implement right now:
+#### Various end user utiltiies
+* stream(io.Reader/io.Writer) encryption, unlike TLS suitable for file encryption
+* Token management - with signing, encryption and expiration
+* Password hash format - with support for versioning 
+
 #### Encryption(symmetric)
 * ChaCha20Poly1305 cipher
 * AES 128/192/256 GCM cipher
