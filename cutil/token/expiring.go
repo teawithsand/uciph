@@ -15,7 +15,7 @@ type CreatedAtData interface {
 
 // ExpireManager returns error if token is expired.
 type ExpireManager struct {
-	Manager // underlying manager, has to be provided
+	Manager Manager // underlying manager, has to be provided
 
 	Now            func() time.Time // defaults to time.Now
 	ForceCreatedAt bool             // if false, then data that does not implement CreatedAtData interface, then it's skipped with no error.

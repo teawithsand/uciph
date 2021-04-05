@@ -2,6 +2,8 @@ package token
 
 import "encoding/json"
 
+// TODO(teaiwthsand): use reser here
+
 // Marshaler is responsible for serializing token data into bytes.
 type Marshaler = func(in interface{}) (out []byte, err error)
 
